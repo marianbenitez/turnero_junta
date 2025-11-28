@@ -1,0 +1,35 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Turno {
+  id            Int           @id @default(autoincrement())
+  fecha         DateTime
+  horaInicio    String
+  horaFin       String
+  cupoMaximo    Int
+  estado        Boolean       @default(true)
+  inscripciones Inscripcion[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Inscripcion {
+  id               Int      @id @default(autoincrement())
+  turnoId          Int
+  turno            Turno    @relation(fields: [turnoId], references: [id], onDelete: Cascade)
+  nombre           String
+  dni              String
+  email            String?
+  telefono         String?
+  atendido         Boolean  @default(false)
+  fechaInscripcion DateTime @default(now())
+}
