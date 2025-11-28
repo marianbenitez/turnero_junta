@@ -44,8 +44,13 @@ export async function GET(request: Request) {
     }))
 
     return NextResponse.json(turnosWithCupo)
-  } catch (error) {
-    return NextResponse.json({ error: 'Error fetching turnos' }, { status: 500 })
+  } catch (error: any) {
+    console.error('Error fetching turnos:', error)
+    return NextResponse.json({
+      error: 'Error fetching turnos',
+      details: error.message,
+      stack: error.stack
+    }, { status: 500 })
   }
 }
 
