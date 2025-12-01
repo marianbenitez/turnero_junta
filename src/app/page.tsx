@@ -4,11 +4,14 @@ import { useState, useEffect } from 'react'
 import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { CalendarView } from '@/components/calendar/CalendarView'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { TurnoDialog } from '@/components/turnos/TurnoDialog'
 import { TurnoDetailDialog } from '@/components/turnos/TurnoDetailDialog'
 import { InscripcionDialog } from '@/components/turnos/InscripcionDialog'
 import { Turno } from '@/types'
 import { toast } from 'sonner'
+import { API_ENDPOINTS } from '@/lib/config'
+import { Search, X } from 'lucide-react'
 
 type ViewMode = 'month' | 'week' | 'day' | 'list'
 
@@ -25,24 +28,45 @@ export default function Home() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
   const [isInscripcionDialogOpen, setIsInscripcionDialogOpen] = useState(false)
 
+  // Search state
+  const [searchDni, setSearchDni] = useState('')
+  const [isSearching, setIsSearching] = useState(false)
+
   // Fetch turnos for the current month
   useEffect(() => {
     fetchTurnosForMonth(currentDate)
   }, [currentDate])
 
-  // SSE Connection
+  // SSE Connection to external API
   useEffect(() => {
-    const eventSource = new EventSource('/api/turnos/events')
+    let eventSource: EventSource | null = null
 
-    eventSource.addEventListener('inscripcion-updated', (e) => {
-      const data = JSON.parse(e.data)
-      console.log('Inscripción actualizada:', data)
-      // Refresh turnos when there's an update
-      fetchTurnosForMonth(currentDate)
-    })
+    try {
+      eventSource = new EventSource(API_ENDPOINTS.events)
+
+      eventSource.addEventListener('inscripcion-updated', (e) => {
+        const data = JSON.parse(e.data)
+        console.log('✅ Inscripción actualizada:', data)
+        // Refresh turnos when there's an update
+        fetchTurnosForMonth(currentDate)
+      })
+
+      eventSource.addEventListener('open', () => {
+        console.log('✅ SSE conectado a:', API_ENDPOINTS.events)
+      })
+
+      eventSource.onerror = () => {
+        console.warn('⚠️ SSE desconectado (reconectando automáticamente):', API_ENDPOINTS.events)
+        // La reconexión es automática, no es necesario hacer nada
+      }
+    } catch (error) {
+      console.warn('⚠️ No se pudo conectar al SSE. La aplicación funcionará sin sincronización en tiempo real.')
+    }
 
     return () => {
-      eventSource.close()
+      if (eventSource) {
+        eventSource.close()
+      }
     }
   }, [currentDate])
 
@@ -53,9 +77,10 @@ export default function Home() {
       const monthEnd = endOfMonth(date)
 
       console.log('Fetching turnos for month:', format(date, 'MMMM yyyy'))
+      console.log('API URL:', API_ENDPOINTS.turnos)
 
-      // Fetch all turnos for the month
-      const res = await fetch(`/api/turnos`)
+      // Fetch all turnos from external API
+      const res = await fetch(API_ENDPOINTS.turnos)
       if (!res.ok) {
         const errorText = await res.text()
         console.error('API Error:', errorText)
@@ -88,7 +113,7 @@ export default function Home() {
         ? format(selectedDate, 'yyyy-MM-dd')
         : format(new Date(), 'yyyy-MM-dd')
 
-      const res = await fetch('/api/turnos', {
+      const res = await fetch(API_ENDPOINTS.turnos, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...data, fecha: formattedDate }),
@@ -109,7 +134,7 @@ export default function Home() {
     if (!selectedTurno) return
 
     try {
-      const res = await fetch(`/api/turnos/${selectedTurno.id}`, {
+      const res = await fetch(API_ENDPOINTS.turnoById(selectedTurno.id), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -130,7 +155,7 @@ export default function Home() {
     if (!confirm('¿Estás seguro de eliminar este turno?')) return
 
     try {
-      const res = await fetch(`/api/turnos/${id}`, {
+      const res = await fetch(API_ENDPOINTS.turnoById(id), {
         method: 'DELETE',
       })
 
@@ -150,7 +175,7 @@ export default function Home() {
     if (!selectedTurno) return
 
     try {
-      const res = await fetch(`/api/turnos/${selectedTurno.id}/inscribir`, {
+      const res = await fetch(API_ENDPOINTS.inscribir(selectedTurno.id), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
@@ -199,7 +224,7 @@ export default function Home() {
 
   const handleToggleAtendido = async (inscripcionId: number, atendido: boolean) => {
     try {
-      const res = await fetch(`/api/inscripciones/${inscripcionId}`, {
+      const res = await fetch(API_ENDPOINTS.inscripcion(inscripcionId), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ atendido }),
@@ -214,15 +239,55 @@ export default function Home() {
     }
   }
 
+  const handleSearchByDni = async () => {
+    if (!searchDni.trim()) {
+      toast.error('Ingrese un DNI para buscar')
+      return
+    }
+
+    setIsSearching(true)
+    try {
+      // Fetch all turnos from the API
+      const res = await fetch(API_ENDPOINTS.turnos)
+      if (!res.ok) throw new Error('Failed to fetch turnos')
+
+      const allTurnos: Turno[] = await res.json()
+
+      // Find turno that has an inscripcion with the searched DNI
+      const foundTurno = allTurnos.find(turno =>
+        turno.inscripciones?.some(inscripcion =>
+          inscripcion.dni.toLowerCase().includes(searchDni.toLowerCase().trim())
+        )
+      )
+
+      if (foundTurno) {
+        setSelectedTurno(foundTurno)
+        setIsTurnoDetailDialogOpen(true)
+        toast.success(`Turno encontrado para DNI: ${searchDni}`)
+      } else {
+        toast.error(`No se encontró ningún turno para el DNI: ${searchDni}`)
+      }
+    } catch (error) {
+      toast.error('Error al buscar turno por DNI')
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  const handleClearSearch = () => {
+    setSearchDni('')
+  }
+
   return (
     <div className="container mx-auto p-6 h-screen flex flex-col">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Calendario de Turnos</h1>
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Calendario de Turnos</h1>
 
-        <div className="flex items-center gap-2">
-          {/* View Mode Selector */}
-          <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
+          <div className="flex items-center gap-2">
+            {/* View Mode Selector */}
+            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
             <Button
               variant={viewMode === 'month' ? 'default' : 'ghost'}
               size="sm"
@@ -252,6 +317,41 @@ export default function Home() {
               Lista
             </Button>
           </div>
+        </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="flex items-center gap-2 max-w-md">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Buscar por DNI..."
+              value={searchDni}
+              onChange={(e) => setSearchDni(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleSearchByDni()
+                }
+              }}
+              className="pl-9 pr-9"
+            />
+            {searchDni && (
+              <button
+                onClick={handleClearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <Button
+            onClick={handleSearchByDni}
+            disabled={isSearching || !searchDni.trim()}
+            size="default"
+          >
+            {isSearching ? 'Buscando...' : 'Buscar'}
+          </Button>
         </div>
       </div>
 

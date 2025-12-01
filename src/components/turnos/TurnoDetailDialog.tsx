@@ -3,6 +3,18 @@
 import { Turno } from '@/types'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
+
+// Función auxiliar para formatear fechas de forma segura
+function formatSafeDate(dateValue: any, formatString: string): string {
+  try {
+    if (!dateValue) return '-'
+    const date = new Date(dateValue)
+    if (isNaN(date.getTime())) return '-'
+    return format(date, formatString, { locale: es })
+  } catch {
+    return '-'
+  }
+}
 import {
   Dialog,
   DialogContent,
@@ -77,7 +89,7 @@ export function TurnoDetailDialog({
               <div>
                 <p className="text-sm text-muted-foreground">Fecha</p>
                 <p className="font-semibold">
-                  {format(new Date(turno.fecha), 'EEEE, dd MMMM yyyy', { locale: es })}
+                  {formatSafeDate(turno.fecha, 'EEEE, dd MMMM yyyy')}
                 </p>
               </div>
             </div>
@@ -163,7 +175,7 @@ export function TurnoDetailDialog({
                         <TableCell>{inscripcion.email || '-'}</TableCell>
                         <TableCell>{inscripcion.telefono || '-'}</TableCell>
                         <TableCell>
-                          {format(new Date(inscripcion.fechaInscripcion), 'dd/MM/yyyy HH:mm')}
+                          {formatSafeDate(inscripcion.fechaInscripcion, 'dd/MM/yyyy HH:mm')}
                         </TableCell>
                         <TableCell>
                           <button
