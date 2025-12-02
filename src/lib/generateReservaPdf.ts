@@ -6,9 +6,8 @@ import { Turno } from '@/types'
 interface InscripcionData {
   nombre: string
   dni: string
-  email?: string
-  telefono?: string
-  atendido: boolean
+  email?: string | null
+  telefono?: string | null
 }
 
 export function generateReservaPdf(
@@ -120,36 +119,31 @@ export function generateReservaPdf(
     doc.text(inscripcion.telefono, 70, yPosition)
   }
 
-  // Estado de la reserva
+  // Notas importantes
   yPosition += 15
   doc.setFillColor(lightGray[0], lightGray[1], lightGray[2])
-  doc.roundedRect(15, yPosition, 180, 18, 3, 3, 'F')
+  doc.roundedRect(15, yPosition, 180, 50, 3, 3, 'F')
 
   yPosition += 10
-  doc.setFontSize(11)
+  doc.setFontSize(12)
+  doc.setFont('helvetica', 'bold')
+  doc.setTextColor(textColor[0], textColor[1], textColor[2])
+  doc.text('Importante', 20, yPosition)
+
+  yPosition += 7
+  doc.setFontSize(10)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(mediumGray[0], mediumGray[1], mediumGray[2])
-  doc.text('Estado:', 20, yPosition)
 
-  if (inscripcion.atendido) {
-    doc.setTextColor(34, 197, 94) // green-500
-    doc.setFont('helvetica', 'bold')
-    doc.text('✓ Atendido', 70, yPosition)
-  } else {
-    doc.setTextColor(234, 179, 8) // yellow-500
-    doc.setFont('helvetica', 'bold')
-    doc.text('⏳ Pendiente', 70, yPosition)
-  }
+  const nota1 = '• Debe presentarse con este comprobante y su DNI en el'
+  const nota2 = '  horario indicado.'
+  const nota3 = '• Si es por primera vez, presentar carpeta con los títulos'
+  const nota4 = '  para ser valorados.'
 
-  // Nota importante
-  yPosition += 25
-  doc.setFontSize(10)
-  doc.setFont('helvetica', 'italic')
-  doc.setTextColor(mediumGray[0], mediumGray[1], mediumGray[2])
-  const nota1 = 'Importante: Debe presentarse con este comprobante y su DNI'
-  const nota2 = 'en el horario indicado.'
-  doc.text(nota1, 105, yPosition, { align: 'center' })
-  doc.text(nota2, 105, yPosition + 5, { align: 'center' })
+  doc.text(nota1, 20, yPosition)
+  doc.text(nota2, 20, yPosition + 5)
+  doc.text(nota3, 20, yPosition + 12)
+  doc.text(nota4, 20, yPosition + 17)
 
   // Footer
   yPosition = 270

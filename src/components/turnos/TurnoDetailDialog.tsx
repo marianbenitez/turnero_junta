@@ -73,21 +73,21 @@ export function TurnoDetailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 gap-0 overflow-hidden bg-card">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto p-0 gap-0 overflow-hidden bg-card w-[95vw] sm:w-full">
         {/* Header with colored background */}
-        <div className="bg-muted/40 px-6 py-4 border-b flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="bg-primary/10 p-2 rounded-full">
-              <Calendar className="h-5 w-5 text-primary" />
+        <div className="bg-muted/40 px-4 sm:px-6 py-3 sm:py-4 border-b flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div className="bg-primary/10 p-1.5 sm:p-2 rounded-full flex-shrink-0">
+              <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
             </div>
-            <div>
-               <DialogTitle className="text-xl">Detalles del Turno</DialogTitle>
-               <p className="text-sm text-muted-foreground capitalize">
+            <div className="min-w-0 flex-1">
+               <DialogTitle className="text-base sm:text-xl truncate">Detalles del Turno</DialogTitle>
+               <p className="text-xs sm:text-sm text-muted-foreground capitalize truncate">
                 {formatSafeDate(turno.fecha, 'EEEE, dd MMMM yyyy')}
                </p>
             </div>
           </div>
-          <Badge variant={turno.estado ? 'default' : 'secondary'} className="px-3 py-1">
+          <Badge variant={turno.estado ? 'default' : 'secondary'} className="px-2 sm:px-3 py-0.5 sm:py-1 text-xs flex-shrink-0">
             {turno.estado ? 'Habilitado' : 'Deshabilitado'}
           </Badge>
         </div>
@@ -95,9 +95,9 @@ export function TurnoDetailDialog({
         <div className={highlightedInscripcion ? "h-full" : "grid grid-cols-1 lg:grid-cols-5 h-full"}>
           {/* Left Column: Details - Hidden when showing search results */}
           {!highlightedInscripcion && (
-            <div className="lg:col-span-2 p-6 border-r bg-muted/5 space-y-6">
-              <div className="space-y-4">
-                <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Información</h4>
+            <div className="lg:col-span-2 p-4 sm:p-6 border-r bg-muted/5 space-y-4 sm:space-y-6">
+              <div className="space-y-3 sm:space-y-4">
+                <h4 className="text-xs sm:text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2 sm:mb-3">Información</h4>
                 
                 <div className="flex items-start gap-3 p-3 rounded-lg bg-background border shadow-sm">
                   <Clock className="h-5 w-5 text-primary mt-0.5" />
@@ -137,7 +137,7 @@ export function TurnoDetailDialog({
           )}
 
           {/* Right Column: Inscription Form or Search Result */}
-          <div className={highlightedInscripcion ? "p-6 bg-card" : "lg:col-span-3 p-6 bg-card"}>
+          <div className={highlightedInscripcion ? "p-4 sm:p-6 bg-card" : "lg:col-span-3 p-4 sm:p-6 bg-card"}>
             <div className="h-full flex flex-col">
               {/* Show highlighted inscription if found via DNI search */}
               {highlightedInscripcion ? (
@@ -237,10 +237,11 @@ export function TurnoDetailDialog({
                           onClick={() => generateReservaPdf(turno, highlightedInscripcion)}
                           variant="outline"
                           size="sm"
-                          className="gap-2 border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-950/30"
+                          className="gap-1 sm:gap-2 border-green-200 dark:border-green-800 hover:bg-green-50 dark:hover:bg-green-950/30 touch-manipulation text-xs sm:text-sm px-2 sm:px-3"
                         >
-                          <Download className="h-4 w-4" />
-                          Descargar Reserva
+                          <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+                          <span className="hidden sm:inline">Descargar Reserva</span>
+                          <span className="sm:hidden">Descargar</span>
                         </Button>
                       </div>
                     </div>
@@ -307,7 +308,7 @@ export function TurnoDetailDialog({
                   </div>
 
                   <div className="pt-4 mt-auto">
-                    <Button type="submit" className="w-full md:w-auto md:min-w-[200px]" size="lg">
+                    <Button type="submit" className="w-full md:w-auto md:min-w-[200px] touch-manipulation" size="lg">
                       Confirmar Inscripción
                     </Button>
                   </div>
@@ -331,8 +332,8 @@ export function TurnoDetailDialog({
           </div>
         </div>
 
-        <DialogFooter className="p-4 border-t bg-muted/10 sm:justify-end">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="p-3 sm:p-4 border-t bg-muted/10 sm:justify-end">
+          <Button variant="outline" onClick={() => onOpenChange(false)} className="touch-manipulation w-full sm:w-auto">
             Cerrar
           </Button>
         </DialogFooter>

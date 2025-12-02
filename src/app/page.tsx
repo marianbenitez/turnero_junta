@@ -217,24 +217,24 @@ export default function Home() {
   }
 
   return (
-    <div className="container mx-auto p-6 h-screen flex flex-col">
+    <div className="container mx-auto p-3 sm:p-4 md:p-6 h-screen flex flex-col">
       {/* Header */}
-      <div className="flex flex-col gap-6 mb-8">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col gap-4 sm:gap-6 mb-4 sm:mb-6 md:mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 sm:gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">Calendario de Turnos</h1>
-            <p className="text-muted-foreground mt-1">Gestiona los turnos y la disponibilidad.</p>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-foreground">Calendario de Turnos</h1>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">Gestiona los turnos y la disponibilidad.</p>
           </div>
 
-          <div className="flex items-center gap-3 bg-card p-1.5 rounded-xl border shadow-sm">
+          <div className="flex items-center gap-2 sm:gap-3 bg-card p-1 sm:p-1.5 rounded-xl border shadow-sm w-full md:w-auto overflow-x-auto">
             {/* View Mode Selector */}
-            <div className="flex items-center bg-muted/50 rounded-lg p-1">
+            <div className="flex items-center bg-muted/50 rounded-lg p-0.5 sm:p-1 min-w-max">
               <Button
                 variant={viewMode === 'month' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setViewMode('month')}
                 className={cn(
-                  "rounded-md px-3 py-1.5 h-8 text-sm font-medium transition-all",
+                  "rounded-md px-2 sm:px-3 py-1 sm:py-1.5 h-7 sm:h-8 text-xs sm:text-sm font-medium transition-all touch-manipulation",
                   viewMode === 'month' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -245,7 +245,7 @@ export default function Home() {
                 size="sm"
                 onClick={() => setViewMode('week')}
                 className={cn(
-                  "rounded-md px-3 py-1.5 h-8 text-sm font-medium transition-all",
+                  "rounded-md px-2 sm:px-3 py-1 sm:py-1.5 h-7 sm:h-8 text-xs sm:text-sm font-medium transition-all touch-manipulation",
                   viewMode === 'week' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -256,7 +256,7 @@ export default function Home() {
                 size="sm"
                 onClick={() => setViewMode('day')}
                 className={cn(
-                  "rounded-md px-3 py-1.5 h-8 text-sm font-medium transition-all",
+                  "rounded-md px-2 sm:px-3 py-1 sm:py-1.5 h-7 sm:h-8 text-xs sm:text-sm font-medium transition-all touch-manipulation",
                   viewMode === 'day' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -267,7 +267,7 @@ export default function Home() {
                 size="sm"
                 onClick={() => setViewMode('list')}
                 className={cn(
-                  "rounded-md px-3 py-1.5 h-8 text-sm font-medium transition-all",
+                  "rounded-md px-2 sm:px-3 py-1 sm:py-1.5 h-7 sm:h-8 text-xs sm:text-sm font-medium transition-all touch-manipulation",
                   viewMode === 'list' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -278,9 +278,9 @@ export default function Home() {
         </div>
 
         {/* Search Bar */}
-        <div className="w-full max-w-md relative group">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+        <div className="w-full sm:max-w-md relative group">
+          <div className="absolute inset-y-0 left-0 pl-2 sm:pl-3 flex items-center pointer-events-none">
+            <Search className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           </div>
           <Input
             type="text"
@@ -292,22 +292,22 @@ export default function Home() {
                 handleSearchByDni()
               }
             }}
-            className="pl-10 pr-20 h-11 bg-card border-border/60 focus-visible:ring-primary/20 transition-all shadow-sm"
+            className="pl-8 sm:pl-10 pr-16 sm:pr-20 h-10 sm:h-11 bg-card border-border/60 focus-visible:ring-primary/20 transition-all shadow-sm text-sm"
           />
-          <div className="absolute inset-y-0 right-0 flex items-center pr-1.5 gap-1">
+          <div className="absolute inset-y-0 right-0 flex items-center pr-1 sm:pr-1.5 gap-0.5 sm:gap-1">
             {searchDni && (
               <button
                 onClick={handleClearSearch}
-                className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                className="p-1 sm:p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors touch-manipulation"
               >
-                <X className="h-3.5 w-3.5" />
+                <X className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               </button>
             )}
             <Button
               onClick={handleSearchByDni}
               disabled={isSearching || !searchDni.trim()}
               size="sm"
-              className="h-8 px-3 text-xs font-medium"
+              className="h-7 sm:h-8 px-2 sm:px-3 text-[11px] sm:text-xs font-medium touch-manipulation"
             >
               {isSearching ? '...' : 'Buscar'}
             </Button>
