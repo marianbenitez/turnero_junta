@@ -5,13 +5,12 @@ import { format, startOfMonth, endOfMonth } from 'date-fns'
 import { CalendarView } from '@/components/calendar/CalendarView'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { TurnoDialog } from '@/components/turnos/TurnoDialog'
 import { TurnoDetailDialog } from '@/components/turnos/TurnoDetailDialog'
-import { InscripcionDialog } from '@/components/turnos/InscripcionDialog'
 import { Turno } from '@/types'
 import { toast } from 'sonner'
 import { API_ENDPOINTS } from '@/lib/config'
 import { Search, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 type ViewMode = 'month' | 'week' | 'day' | 'list'
 
@@ -22,15 +21,14 @@ export default function Home() {
   const [viewMode, setViewMode] = useState<ViewMode>('month')
 
   // Dialog states
-  const [isTurnoDialogOpen, setIsTurnoDialogOpen] = useState(false)
   const [isTurnoDetailDialogOpen, setIsTurnoDetailDialogOpen] = useState(false)
   const [selectedTurno, setSelectedTurno] = useState<Turno | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
-  const [isInscripcionDialogOpen, setIsInscripcionDialogOpen] = useState(false)
 
   // Search state
   const [searchDni, setSearchDni] = useState('')
   const [isSearching, setIsSearching] = useState(false)
+  const [highlightedDni, setHighlightedDni] = useState<string | undefined>(undefined)
 
   // Fetch turnos for the current month
   useEffect(() => {
@@ -107,67 +105,17 @@ export default function Home() {
     }
   }
 
-  const handleCreateTurno = async (data: Partial<Turno>) => {
+
+
+  const fetchTurnoById = async (id: number) => {
     try {
-      const formattedDate = selectedDate
-        ? format(selectedDate, 'yyyy-MM-dd')
-        : format(new Date(), 'yyyy-MM-dd')
-
-      const res = await fetch(API_ENDPOINTS.turnos, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, fecha: formattedDate }),
-      })
-
-      if (!res.ok) throw new Error('Failed to create turno')
-
-      toast.success('Turno creado exitosamente')
-      setIsTurnoDialogOpen(false)
-      setSelectedDate(undefined)
-      fetchTurnosForMonth(currentDate)
-    } catch (error) {
-      toast.error('Error al crear turno')
-    }
-  }
-
-  const handleUpdateTurno = async (data: Partial<Turno>) => {
-    if (!selectedTurno) return
-
-    try {
-      const res = await fetch(API_ENDPOINTS.turnoById(selectedTurno.id), {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      })
-
-      if (!res.ok) throw new Error('Failed to update turno')
-
-      toast.success('Turno actualizado exitosamente')
-      setIsTurnoDialogOpen(false)
-      setSelectedTurno(null)
-      fetchTurnosForMonth(currentDate)
-    } catch (error) {
-      toast.error('Error al actualizar turno')
-    }
-  }
-
-  const handleDeleteTurno = async (id: number) => {
-    if (!confirm('¿Estás seguro de eliminar este turno?')) return
-
-    try {
-      const res = await fetch(API_ENDPOINTS.turnoById(id), {
-        method: 'DELETE',
-      })
-
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || 'Failed to delete turno')
+      const res = await fetch(API_ENDPOINTS.turnoById(id))
+      if (res.ok) {
+        const updatedTurno = await res.json()
+        setSelectedTurno(updatedTurno)
       }
-
-      toast.success('Turno eliminado exitosamente')
-      fetchTurnosForMonth(currentDate)
-    } catch (error: any) {
-      toast.error(error.message)
+    } catch (error) {
+      console.error('Error refreshing turno:', error)
     }
   }
 
@@ -186,10 +134,20 @@ export default function Home() {
         throw new Error(errorData.error || 'Failed to inscribe')
       }
 
+      await res.json()
+
+      // Show success message
       toast.success('Inscripción exitosa')
-      setIsInscripcionDialogOpen(false)
-      setSelectedTurno(null)
+
+      // Don't close the dialog, just refresh data so the list updates
       fetchTurnosForMonth(currentDate)
+
+      // Also update the selected turno to reflect the new inscription immediately if possible
+      fetchTurnoById(selectedTurno.id)
+
+      // Set the highlighted DNI to show the newly created inscription
+      setHighlightedDni(data.dni)
+
     } catch (error: any) {
       toast.error(error.message)
     }
@@ -197,29 +155,8 @@ export default function Home() {
 
   const handleTurnoClick = (turno: Turno) => {
     setSelectedTurno(turno)
+    setHighlightedDni(undefined) // Clear highlighted DNI when clicking normally
     setIsTurnoDetailDialogOpen(true)
-  }
-
-  const handleCreateFromDate = (date: Date) => {
-    setSelectedDate(date)
-    setSelectedTurno(null)
-    setIsTurnoDialogOpen(true)
-  }
-
-  const handleEditFromDetail = () => {
-    setIsTurnoDetailDialogOpen(false)
-    setIsTurnoDialogOpen(true)
-  }
-
-  const handleDeleteFromDetail = async () => {
-    if (!selectedTurno) return
-    setIsTurnoDetailDialogOpen(false)
-    await handleDeleteTurno(selectedTurno.id)
-  }
-
-  const handleInscribirFromDetail = () => {
-    setIsTurnoDetailDialogOpen(false)
-    setIsInscripcionDialogOpen(true)
   }
 
   const handleToggleAtendido = async (inscripcionId: number, atendido: boolean) => {
@@ -262,6 +199,7 @@ export default function Home() {
 
       if (foundTurno) {
         setSelectedTurno(foundTurno)
+        setHighlightedDni(searchDni.trim()) // Set the DNI to highlight
         setIsTurnoDetailDialogOpen(true)
         toast.success(`Turno encontrado para DNI: ${searchDni}`)
       } else {
@@ -281,77 +219,99 @@ export default function Home() {
   return (
     <div className="container mx-auto p-6 h-screen flex flex-col">
       {/* Header */}
-      <div className="flex flex-col gap-4 mb-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Calendario de Turnos</h1>
-
-          <div className="flex items-center gap-2">
-            {/* View Mode Selector */}
-            <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-            <Button
-              variant={viewMode === 'month' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('month')}
-            >
-              Mes
-            </Button>
-            <Button
-              variant={viewMode === 'week' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('week')}
-            >
-              Semana
-            </Button>
-            <Button
-              variant={viewMode === 'day' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('day')}
-            >
-              Día
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-            >
-              Lista
-            </Button>
+      <div className="flex flex-col gap-6 mb-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">Calendario de Turnos</h1>
+            <p className="text-muted-foreground mt-1">Gestiona los turnos y la disponibilidad.</p>
           </div>
-        </div>
+
+          <div className="flex items-center gap-3 bg-card p-1.5 rounded-xl border shadow-sm">
+            {/* View Mode Selector */}
+            <div className="flex items-center bg-muted/50 rounded-lg p-1">
+              <Button
+                variant={viewMode === 'month' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('month')}
+                className={cn(
+                  "rounded-md px-3 py-1.5 h-8 text-sm font-medium transition-all",
+                  viewMode === 'month' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Mes
+              </Button>
+              <Button
+                variant={viewMode === 'week' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('week')}
+                className={cn(
+                  "rounded-md px-3 py-1.5 h-8 text-sm font-medium transition-all",
+                  viewMode === 'week' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Semana
+              </Button>
+              <Button
+                variant={viewMode === 'day' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('day')}
+                className={cn(
+                  "rounded-md px-3 py-1.5 h-8 text-sm font-medium transition-all",
+                  viewMode === 'day' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Día
+              </Button>
+              <Button
+                variant={viewMode === 'list' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className={cn(
+                  "rounded-md px-3 py-1.5 h-8 text-sm font-medium transition-all",
+                  viewMode === 'list' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Lista
+              </Button>
+            </div>
+          </div>
         </div>
 
         {/* Search Bar */}
-        <div className="flex items-center gap-2 max-w-md">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Buscar por DNI..."
-              value={searchDni}
-              onChange={(e) => setSearchDni(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleSearchByDni()
-                }
-              }}
-              className="pl-9 pr-9"
-            />
+        <div className="w-full max-w-md relative group">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
+          </div>
+          <Input
+            type="text"
+            placeholder="Buscar turno por DNI..."
+            value={searchDni}
+            onChange={(e) => setSearchDni(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleSearchByDni()
+              }
+            }}
+            className="pl-10 pr-20 h-11 bg-card border-border/60 focus-visible:ring-primary/20 transition-all shadow-sm"
+          />
+          <div className="absolute inset-y-0 right-0 flex items-center pr-1.5 gap-1">
             {searchDni && (
               <button
                 onClick={handleClearSearch}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="p-1.5 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
               >
-                <X className="h-4 w-4" />
+                <X className="h-3.5 w-3.5" />
               </button>
             )}
+            <Button
+              onClick={handleSearchByDni}
+              disabled={isSearching || !searchDni.trim()}
+              size="sm"
+              className="h-8 px-3 text-xs font-medium"
+            >
+              {isSearching ? '...' : 'Buscar'}
+            </Button>
           </div>
-          <Button
-            onClick={handleSearchByDni}
-            disabled={isSearching || !searchDni.trim()}
-            size="default"
-          >
-            {isSearching ? 'Buscando...' : 'Buscar'}
-          </Button>
         </div>
       </div>
 
@@ -367,7 +327,6 @@ export default function Home() {
             currentDate={currentDate}
             onDateChange={setCurrentDate}
             onTurnoClick={handleTurnoClick}
-            onCreateTurno={handleCreateFromDate}
             viewMode={viewMode}
           />
         )}
@@ -380,39 +339,13 @@ export default function Home() {
           setIsTurnoDetailDialogOpen(open)
           if (!open) {
             setSelectedTurno(null)
+            setHighlightedDni(undefined) // Clear highlighted DNI when closing
           }
         }}
         turno={selectedTurno}
-        onEdit={handleEditFromDetail}
-        onDelete={handleDeleteFromDetail}
-        onInscribir={handleInscribirFromDetail}
+        onSubmitInscripcion={handleInscribir}
         onToggleAtendido={handleToggleAtendido}
-      />
-
-      <TurnoDialog
-        open={isTurnoDialogOpen}
-        onOpenChange={(open) => {
-          setIsTurnoDialogOpen(open)
-          if (!open) {
-            setSelectedTurno(null)
-            setSelectedDate(undefined)
-          }
-        }}
-        onSubmit={selectedTurno ? handleUpdateTurno : handleCreateTurno}
-        initialData={selectedTurno}
-        selectedDate={selectedDate}
-      />
-
-      <InscripcionDialog
-        open={isInscripcionDialogOpen}
-        onOpenChange={(open) => {
-          setIsInscripcionDialogOpen(open)
-          if (!open) {
-            setSelectedTurno(null)
-          }
-        }}
-        onSubmit={handleInscribir}
-        turno={selectedTurno}
+        highlightedDni={highlightedDni}
       />
     </div>
   )

@@ -9,32 +9,20 @@ interface TurnoEventProps {
   onClick: () => void
 }
 
-const EVENT_COLORS = [
-  'bg-orange-500 hover:bg-orange-600',
-  'bg-purple-500 hover:bg-purple-600',
-  'bg-blue-500 hover:bg-blue-600',
-  'bg-pink-500 hover:bg-pink-600',
-  'bg-green-500 hover:bg-green-600',
-  'bg-yellow-500 hover:bg-yellow-600',
-  'bg-red-500 hover:bg-red-600',
-  'bg-indigo-500 hover:bg-indigo-600',
+const EVENT_STYLES = [
+  'bg-[var(--chart-1)]/15 text-[var(--chart-1)] border-l-[3px] border-l-[var(--chart-1)] hover:bg-[var(--chart-1)]/25',
+  'bg-[var(--chart-2)]/15 text-[var(--chart-2)] border-l-[3px] border-l-[var(--chart-2)] hover:bg-[var(--chart-2)]/25',
+  'bg-[var(--chart-3)]/15 text-[var(--chart-3)] border-l-[3px] border-l-[var(--chart-3)] hover:bg-[var(--chart-3)]/25',
+  'bg-[var(--chart-4)]/15 text-[var(--chart-4)] border-l-[3px] border-l-[var(--chart-4)] hover:bg-[var(--chart-4)]/25',
+  'bg-[var(--chart-5)]/15 text-[var(--chart-5)] border-l-[3px] border-l-[var(--chart-5)] hover:bg-[var(--chart-5)]/25',
 ]
 
 export function TurnoEvent({ turno, onClick }: TurnoEventProps) {
   // Get a consistent color based on turno ID
-  const colorClass = EVENT_COLORS[turno.id % EVENT_COLORS.length]
+  const styleClass = EVENT_STYLES[turno.id % EVENT_STYLES.length]
 
-  const cupoDisponible = turno.cupoActual
-  const cupoPercentage = (cupoDisponible / turno.cupoMaximo) * 100
-
-  // Determine status color based on availability
-  let statusColor = 'text-green-100'
-  if (cupoPercentage <= 25) {
-    statusColor = 'text-red-100'
-  } else if (cupoPercentage <= 50) {
-    statusColor = 'text-yellow-100'
-  }
-
+  const cupoOcupado = turno.inscripciones?.length || 0
+  
   return (
     <button
       onClick={(e) => {
@@ -42,23 +30,23 @@ export function TurnoEvent({ turno, onClick }: TurnoEventProps) {
         onClick()
       }}
       className={cn(
-        "w-full text-left px-2 py-1 rounded text-xs text-white transition-colors cursor-pointer group",
-        colorClass,
-        !turno.estado && "opacity-50 cursor-not-allowed"
+        "w-full text-left px-2 py-1.5 rounded-r-md text-xs transition-all cursor-pointer group mb-1",
+        styleClass,
+        !turno.estado && "opacity-50 cursor-not-allowed grayscale"
       )}
     >
       <div className="flex items-center justify-between gap-1">
-        <div className="flex items-center gap-1 min-w-0 flex-1">
-          <Clock className="h-3 w-3 flex-shrink-0" />
-          <span className="font-medium truncate">
+        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <Clock className="h-3 w-3 flex-shrink-0 opacity-70" />
+          <span className="font-semibold truncate">
             {turno.horaInicio}
           </span>
         </div>
 
-        <div className={cn("flex items-center gap-1 flex-shrink-0", statusColor)}>
+        <div className={cn("flex items-center gap-1 flex-shrink-0 opacity-80")}>
           <Users className="h-3 w-3" />
-          <span className="text-[10px] font-semibold">
-            {cupoDisponible}/{turno.cupoMaximo}
+          <span className="text-[10px] font-bold">
+            {cupoOcupado}/{turno.cupoMaximo}
           </span>
         </div>
       </div>

@@ -26,7 +26,6 @@ interface CalendarViewProps {
   currentDate: Date
   onDateChange: (date: Date) => void
   onTurnoClick: (turno: Turno) => void
-  onCreateTurno?: (date: Date) => void
   viewMode: 'month' | 'week' | 'day' | 'list'
 }
 
@@ -35,7 +34,6 @@ export function CalendarView({
   currentDate,
   onDateChange,
   onTurnoClick,
-  onCreateTurno,
   viewMode
 }: CalendarViewProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(currentDate)
@@ -77,23 +75,25 @@ export function CalendarView({
       days.push(
         <div
           key={i}
-          className="text-center text-sm font-medium text-muted-foreground py-3 border-b"
+          className="text-center text-xs font-semibold text-muted-foreground py-4 border-b border-border/50 uppercase tracking-wider"
         >
-          {format(addDays(startDateCopy, i), dateFormat, { locale: es }).toUpperCase()}
+          {format(addDays(startDateCopy, i), dateFormat, { locale: es })}
         </div>
       )
     }
 
-    return <div className="grid grid-cols-7">{days}</div>
+    return <div className="grid grid-cols-7 bg-muted/20">{days}</div>
   }
 
   const renderCells = () => {
     const rows = []
     let days = []
     let day = startDate
+    let formattedDate = ''
 
     while (day <= endDate) {
       for (let i = 0; i < 7; i++) {
+        formattedDate = format(day, 'd')
         const cloneDay = day
         const dayTurnos = getTurnosForDate(cloneDay)
         const isCurrentMonth = isSameMonth(day, monthStart)
@@ -104,45 +104,28 @@ export function CalendarView({
           <div
             key={day.toString()}
             className={cn(
-              "min-h-[120px] border-r border-b p-2 transition-colors relative group",
-              !isCurrentMonth && "bg-muted/30 text-muted-foreground",
-              isDayToday && "bg-blue-50 dark:bg-blue-950/20",
-              isSelected && "ring-2 ring-blue-500 ring-inset"
+              "min-h-[140px] border-r border-b border-border/50 p-2 transition-all relative group bg-card hover:bg-muted/30",
+              !isCurrentMonth && "bg-muted/10 text-muted-foreground/50",
+              isSelected && "ring-1 ring-primary ring-inset bg-primary/5"
             )}
             onClick={() => {
               setSelectedDate(cloneDay)
-              if (onCreateTurno && isCurrentMonth) {
-                // Optional: trigger create dialog on day click
-              }
             }}
           >
-            <div className="flex justify-between items-start mb-1">
+            <div className="flex justify-between items-start mb-2">
               <span
                 className={cn(
-                  "text-sm font-medium inline-flex items-center justify-center w-7 h-7 rounded-full",
-                  !isCurrentMonth && "text-muted-foreground",
-                  isDayToday && "bg-blue-600 text-white font-bold"
+                  "text-sm font-medium inline-flex items-center justify-center w-8 h-8 rounded-full transition-colors",
+                  !isCurrentMonth && "text-muted-foreground/50",
+                  isDayToday && "bg-primary text-primary-foreground shadow-sm font-bold",
+                  !isDayToday && isSelected && "text-primary font-bold"
                 )}
               >
-                {format(cloneDay, 'd')}
+                {formattedDate}
               </span>
-
-              {isCurrentMonth && onCreateTurno && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    onCreateTurno(cloneDay)
-                  }}
-                >
-                  <span className="text-lg">+</span>
-                </Button>
-              )}
             </div>
 
-            <div className="space-y-1 overflow-y-auto max-h-[90px]">
+            <div className="space-y-1 overflow-y-auto max-h-[100px] pr-1 custom-scrollbar">
               {dayTurnos.map((turno) => (
                 <TurnoEvent
                   key={turno.id}
@@ -167,60 +150,64 @@ export function CalendarView({
 
   if (viewMode !== 'month') {
     return (
-      <div className="flex items-center justify-center h-96 text-muted-foreground">
-        Vista {viewMode} en desarrollo
+      <div className="flex flex-col items-center justify-center h-96 text-muted-foreground bg-muted/10 rounded-xl border border-dashed">
+        <p className="text-lg font-medium">Vista {viewMode} en desarrollo</p>
+        <p className="text-sm">Pronto estará disponible</p>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-card rounded-xl shadow-sm border border-border/60 overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4 px-4 py-3 border-b">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handlePrevMonth}
-            className="h-9 w-9"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-
-          <h2 className="text-xl font-semibold min-w-[200px] text-center">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-border/60 bg-card">
+        <div className="flex items-center gap-2">
+           <div className="flex items-center bg-muted/50 rounded-lg p-0.5 border border-border/50">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handlePrevMonth}
+              className="h-8 w-8 hover:bg-background hover:shadow-sm"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleNextMonth}
+              className="h-8 w-8 hover:bg-background hover:shadow-sm"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <h2 className="text-xl font-bold capitalize ml-2 text-foreground/90">
             {format(currentDate, 'MMMM yyyy', { locale: es })}
           </h2>
+        </div>
 
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleNextMonth}
-            className="h-9 w-9"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-
+        <div className="flex items-center gap-3">
           <Button
             variant="outline"
             onClick={handleToday}
-            className="h-9"
+            className="h-9 px-4 font-medium hover:bg-muted/50"
           >
             Hoy
           </Button>
-        </div>
+          
+          <div className="h-6 w-px bg-border/60 mx-1" />
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" className="h-9 w-9">
+          <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground">
             <Filter className="h-4 w-4" />
           </Button>
-          <Button variant="outline" size="icon" className="h-9 w-9">
+          <Button variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:text-foreground">
             <Printer className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
       {/* Calendar Grid */}
-      <div className="flex-1 border rounded-lg overflow-hidden bg-background">
+      <div className="flex-1 overflow-hidden bg-background">
         {renderDays()}
         {renderCells()}
       </div>
